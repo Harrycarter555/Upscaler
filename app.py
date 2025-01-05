@@ -4,7 +4,6 @@ from flask import Flask, request, send_from_directory
 from telegram import Bot, Update
 from telegram.ext import Dispatcher, CommandHandler, CallbackContext
 from PIL import Image
-import cv2
 
 app = Flask(__name__)
 
@@ -25,15 +24,15 @@ dispatcher = Dispatcher(bot, None, workers=0)
 def start(update: Update, context: CallbackContext):
     update.message.reply_text('Welcome to the Image Upscaler Bot! Send me an image to upscale.')
 
-# Upscaling Function
+# Upscaling Function using Pillow
 def upscale_image(image_path, output_path):
     try:
-        # Load the image using OpenCV
-        image = cv2.imread(image_path)
-        # Double the resolution using cubic interpolation
-        upscaled_image = cv2.resize(image, (0, 0), fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-        # Save the upscaled image
-        cv2.imwrite(output_path, upscaled_image)
+        with Image.open(image_path) as img:
+            # Double the size of the image
+            new_size = (img.width * 2, img.height * 2)
+            upscaled_image = img.resize(new_size, Image.ANTIALIAS)
+            # Save the upscaled image
+            upscaled_image.save(output_path)
         return output_path
     except Exception as e:
         return str(e)
@@ -67,7 +66,7 @@ def handle_image(update: Update, context: CallbackContext):
 # Add handlers to dispatcher
 dispatcher.add_handler(CommandHandler('start', start))
 
-# Handle images
+# Add a command handler for images
 dispatcher.add_handler(CommandHandler('image', handle_image))
 
 # Webhook route
