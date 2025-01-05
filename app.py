@@ -4,6 +4,7 @@ from flask import Flask, request, send_from_directory
 from telegram import Bot, Update
 from telegram.ext import Dispatcher, CommandHandler, CallbackContext
 from PIL import Image
+from real_esrgan import RealESRGAN
 
 app = Flask(__name__)
 
@@ -20,19 +21,20 @@ if not WEBHOOK_URL:
 bot = Bot(token=TELEGRAM_TOKEN)
 dispatcher = Dispatcher(bot, None, workers=0)
 
+# Initialize the RealESRGAN model
+upscaler = RealESRGAN(device='cuda')  # Use 'cpu' if no GPU is available
+upscaler.load_weights('path_to_weights.pth')  # Provide the correct path to the model weights
+
 # Define the start command handler
 def start(update: Update, context: CallbackContext):
     update.message.reply_text('Welcome to the Image Upscaler Bot! Send me an image to upscale.')
 
-# Upscaling Function using Pillow
-def upscale_image(image_path, output_path):
+# Upscaling Function using AI (Real-ESRGAN)
+def upscale_image(input_path, output_path):
     try:
-        with Image.open(image_path) as img:
-            # Double the size of the image
-            new_size = (img.width * 2, img.height * 2)
-            upscaled_image = img.resize(new_size, Image.ANTIALIAS)
-            # Save the upscaled image
-            upscaled_image.save(output_path)
+        img = Image.open(input_path)
+        upscaled_img = upscaler.predict(img)
+        upscaled_img.save(output_path)
         return output_path
     except Exception as e:
         return str(e)
@@ -51,7 +53,7 @@ def handle_image(update: Update, context: CallbackContext):
     # Download the image
     file.download(input_path)
 
-    # Perform upscaling
+    # Perform AI-based upscaling
     upscaled_path = upscale_image(input_path, output_path)
 
     # Send back the upscaled image
