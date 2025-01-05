@@ -2,3 +2,5 @@ Flask==2.3.0
 python-telegram-bot==13.7
 requests==2.28.2
 Pillow==10.0.0
+torch==2.1.0+cpu  # If using CPU, for GPU use: torch==2.1.0+cu118
+real-esrgan==0.3.0  # For AI-based upscaling
