@@ -6,11 +6,16 @@ from selenium.webdriver.chrome.options import Options
 import time
 from telegram import Update, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, Dispatcher, CallbackQueryHandler
+import logging
 
 app = Flask(__name__)
 
 # Global variable to store current page number
 current_page = 0
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Selenium WebDriver setup
 def setup_driver():
@@ -42,7 +47,7 @@ def fetch_images(query, num_images=10):
                 if len(image_urls) >= num_images:
                     break
         except Exception as e:
-            print(f"Error fetching image: {e}")
+            logger.error(f"Error fetching image: {e}")
             continue
 
     driver.quit()
