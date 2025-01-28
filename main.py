@@ -1,7 +1,7 @@
 from flask import Flask, request
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from telegram import Update, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, CallbackContext, Dispatcher
@@ -9,33 +9,38 @@ import time
 
 app = Flask(__name__)
 
-# Selenium WebDriver Setup
+# Selenium WebDriver setup
 def setup_driver():
     chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run browser in headless mode
-    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--headless")  # Run Chrome in headless mode
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--log-level=3")  # Suppress warnings/errors in console
-    service = Service(executable_path="./chromedriver")  # Replace with your ChromeDriver path
+    chrome_options.add_argument("--disable-gpu")
+    service = Service(executable_path="./chromedriver")  # Update with your ChromeDriver path
     return webdriver.Chrome(service=service, options=chrome_options)
 
-# Fetch images using Selenium
+# Function to fetch images from Google
 def fetch_images(query, num_images=10):
     driver = setup_driver()
     search_url = f"https://www.google.com/search?q={query}&tbm=isch"
     driver.get(search_url)
-    time.sleep(2)  # Wait for the page to load
-
+    time.sleep(2)  # Allow page to load
+    
+    # Scroll to load more images
+    for _ in range(3):  # Adjust scrolling attempts based on need
+        driver.execute_script("window.scrollBy(0, 1000);")
+        time.sleep(2)
+    
+    # Fetch image URLs
+    images = driver.find_elements(By.CSS_SELECTOR, "img.rg_i")
     image_urls = []
-    images = driver.find_elements(By.CSS_SELECTOR, "img.rg_i")  # Targeting image elements
     for img in images:
         try:
-            img.click()  # Click to load full image
+            img.click()  # Click to load the full image
             time.sleep(1)
-            full_img = driver.find_element(By.CSS_SELECTOR, "img.n3VNCb")  # Full-size image
+            full_img = driver.find_element(By.CSS_SELECTOR, "img.n3VNCb")
             src = full_img.get_attribute("src")
-            if src and src.startswith("http") and src not in image_urls:
+            if src and src.startswith("http"):
                 image_urls.append(src)
                 if len(image_urls) >= num_images:
                     break
@@ -44,11 +49,11 @@ def fetch_images(query, num_images=10):
     driver.quit()
     return image_urls
 
-# Start command
+# /start command
 def start(update: Update, context: CallbackContext):
     update.message.reply_text("Welcome! Photos search karne ke liye `/search` command ka use karein. Example: `/search nature`.")
 
-# Search command
+# /search command
 def search(update: Update, context: CallbackContext):
     query = " ".join(context.args)
     if not query:
