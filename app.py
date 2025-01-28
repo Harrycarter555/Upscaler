@@ -38,7 +38,7 @@ def search(update: Update, context: CallbackContext):
 
 def main():
     # Apna Telegram Bot API Token yahan dalen
-    updater = Updater("YOUR_TELEGRAM_BOT_API_TOKEN", use_context=True)
+    updater = Updater("7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w", use_context=True)
 
     # Dispatcher ko initialize karein
     dp = updater.dispatcher
