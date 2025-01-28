@@ -9,16 +9,16 @@ import time
 
 app = Flask(__name__)
 
-# Selenium WebDriver setup
+# Selenium WebDriver Setup
 def setup_driver():
     chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Headless mode for running without GUI
+    chrome_options.add_argument("--headless")  # Run browser in headless mode
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    service = Service(executable_path="./chromedriver")  # Path to ChromeDriver
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    return driver
+    chrome_options.add_argument("--log-level=3")  # Suppress warnings/errors in console
+    service = Service(executable_path="./chromedriver")  # Replace with your ChromeDriver path
+    return webdriver.Chrome(service=service, options=chrome_options)
 
 # Fetch images using Selenium
 def fetch_images(query, num_images=10):
@@ -27,23 +27,28 @@ def fetch_images(query, num_images=10):
     driver.get(search_url)
     time.sleep(2)  # Wait for the page to load
 
-    # Fetch image URLs
     image_urls = []
-    images = driver.find_elements(By.CSS_SELECTOR, "img")
+    images = driver.find_elements(By.CSS_SELECTOR, "img.rg_i")  # Targeting image elements
     for img in images:
-        src = img.get_attribute("src")
-        if src and src.startswith("http"):
-            image_urls.append(src)
-            if len(image_urls) >= num_images:
-                break
-    driver.quit()  # Close the browser
+        try:
+            img.click()  # Click to load full image
+            time.sleep(1)
+            full_img = driver.find_element(By.CSS_SELECTOR, "img.n3VNCb")  # Full-size image
+            src = full_img.get_attribute("src")
+            if src and src.startswith("http") and src not in image_urls:
+                image_urls.append(src)
+                if len(image_urls) >= num_images:
+                    break
+        except Exception as e:
+            continue
+    driver.quit()
     return image_urls
 
-# Start command handler
+# Start command
 def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Welcome! HD photos search karne ke liye `/search` command ka use karein. Example: `/search nature`.")
+    update.message.reply_text("Welcome! Photos search karne ke liye `/search` command ka use karein. Example: `/search nature`.")
 
-# Search command handler
+# Search command
 def search(update: Update, context: CallbackContext):
     query = " ".join(context.args)
     if not query:
@@ -52,20 +57,20 @@ def search(update: Update, context: CallbackContext):
 
     update.message.reply_text(f"Searching for '{query}'...")
 
-    # Fetch image URLs
+    # Fetch images
     image_urls = fetch_images(query, num_images=10)
 
     if not image_urls:
         update.message.reply_text("Koi images nahi mili. Please try another keyword.")
         return
 
-    # Send images to the user
-    media_group = [InputMediaPhoto(url) for url in image_urls[:5]]  # Send only 5 images
+    # Send images
+    media_group = [InputMediaPhoto(url) for url in image_urls[:5]]
     update.message.reply_media_group(media=media_group)
 
-    # Send additional message for more images
+    # Inform user about additional images
     if len(image_urls) > 5:
-        update.message.reply_text("Aapko aur images chahiye toh `/search <query>` command dobara use karein.")
+        update.message.reply_text("Aur images ke liye `/search <query>` dobara use karein.")
 
 # Flask route for Telegram webhook
 @app.route('/webhook', methods=['POST'])
@@ -74,12 +79,12 @@ def webhook():
     dispatcher.process_update(update)
     return 'ok'
 
-# Bot initialization
-bot_token = "7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w"  # Replace with your bot's token
+# Telegram bot setup
+bot_token = "7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w"  # Replace with your bot token
 bot = Updater(bot_token, use_context=True).bot
 dispatcher = Dispatcher(bot, None, workers=0)
 
-# Add Telegram command handlers
+# Command handlers
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("search", search))
 
