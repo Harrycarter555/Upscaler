@@ -20,7 +20,12 @@ logger = logging.getLogger(__name__)
 # Selenium WebDriver setup
 def setup_driver():
     chrome_options = Options()
-    chrome_options.add_argument("--start-maximized")  # This opens the browser in full-screen
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--headless")  # Run in headless mode (no GUI)
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     service = Service("./chromedriver")  # Update this path with your local ChromeDriver path
     return webdriver.Chrome(service=service, options=chrome_options)
 
@@ -37,7 +42,7 @@ def fetch_images(query, num_images=10):
         time.sleep(2)
 
     # Extract image URLs
-    images = driver.find_elements(By.CSS_SELECTOR, "img.rg_i")
+    images = driver.find_elements(By.CSS_SELECTOR, "img.Q4LuWd")  # Updated selector
     image_urls = []
     for img in images:
         try:
@@ -50,6 +55,7 @@ def fetch_images(query, num_images=10):
             logger.error(f"Error fetching image: {e}")
             continue
 
+    logger.info(f"Found {len(image_urls)} images for query: {query}")
     driver.quit()
     return image_urls
 
@@ -71,6 +77,9 @@ def search(update: Update, context: CallbackContext):
     if not image_urls:
         update.message.reply_text("Koi images nahi mili.")
         return
+
+    # Log the image URLs
+    logger.info(f"Image URLs: {image_urls}")
 
     # Send first 5 images
     media_group = [InputMediaPhoto(url) for url in image_urls[:5]]
@@ -122,7 +131,7 @@ def webhook():
     return 'ok'
 
 # Initialize bot and dispatcher
-bot_token = "7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w"  # Add your bot token here
+bot_token = "7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w"  # Replace with your bot token
 bot = Updater(bot_token, use_context=True).bot
 dispatcher = Dispatcher(bot, None, workers=0)
 
