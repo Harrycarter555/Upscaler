@@ -1,7 +1,10 @@
+from flask import Flask, request
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update, InputMediaPhoto
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, Dispatcher
+
+app = Flask(__name__)
 
 # Google Images se photos fetch karein
 def fetch_images(query):
@@ -36,20 +39,22 @@ def search(update: Update, context: CallbackContext):
     media_group = [InputMediaPhoto(url) for url in image_urls[:5]]  # Max 5 images
     update.message.reply_media_group(media=media_group)
 
-def main():
-    # Apna Telegram Bot API Token yahan dalen
-    updater = Updater("7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w", use_context=True)
+# Flask route for Telegram webhook
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
+    return 'ok'
 
-    # Dispatcher ko initialize karein
-    dp = updater.dispatcher
+# Initialize bot and dispatcher
+bot_token = "7882023357:AAGSyfZxk_YqoGY-8Q4ueLawq8ZfDK-Sc1w"
+bot = Updater(bot_token, use_context=True).bot
+dispatcher = Dispatcher(bot, None, workers=0)
 
-    # Command handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("search", search))
+# Command handlers
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CommandHandler("search", search))
 
-    # Bot ko start karein
-    updater.start_polling()
-    updater.idle()
-
+# Run Flask app
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=3000)
