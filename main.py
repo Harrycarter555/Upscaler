@@ -16,30 +16,27 @@ def setup_driver():
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    service = Service(executable_path="./chromedriver")  # Update with your ChromeDriver path
+    service = Service("./chromedriver")  # Update the path to your ChromeDriver
     return webdriver.Chrome(service=service, options=chrome_options)
 
-# Function to fetch images from Google
-def fetch_images(query, num_images=10):
+# Fetch images from Google
+def fetch_images(query, num_images=5):
     driver = setup_driver()
     search_url = f"https://www.google.com/search?q={query}&tbm=isch"
     driver.get(search_url)
-    time.sleep(2)  # Allow page to load
+    time.sleep(2)  # Wait for page to load
     
-    # Scroll to load more images
-    for _ in range(3):  # Adjust scrolling attempts based on need
+    # Scroll down to load more images
+    for _ in range(3):
         driver.execute_script("window.scrollBy(0, 1000);")
         time.sleep(2)
     
-    # Fetch image URLs
+    # Extract image URLs
     images = driver.find_elements(By.CSS_SELECTOR, "img.rg_i")
     image_urls = []
     for img in images:
         try:
-            img.click()  # Click to load the full image
-            time.sleep(1)
-            full_img = driver.find_element(By.CSS_SELECTOR, "img.n3VNCb")
-            src = full_img.get_attribute("src")
+            src = img.get_attribute("src")
             if src and src.startswith("http"):
                 image_urls.append(src)
                 if len(image_urls) >= num_images:
@@ -51,7 +48,10 @@ def fetch_images(query, num_images=10):
 
 # /start command
 def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Welcome! Photos search karne ke liye `/search` command ka use karein. Example: `/search nature`.")
+    update.message.reply_text(
+        "Welcome! HD images search karne ke liye `/search` ka use karein.\n\n"
+        "Example: `/search engine`"
+    )
 
 # /search command
 def search(update: Update, context: CallbackContext):
@@ -63,19 +63,15 @@ def search(update: Update, context: CallbackContext):
     update.message.reply_text(f"Searching for '{query}'...")
 
     # Fetch images
-    image_urls = fetch_images(query, num_images=10)
+    image_urls = fetch_images(query, num_images=5)
 
     if not image_urls:
-        update.message.reply_text("Koi images nahi mili. Please try another keyword.")
+        update.message.reply_text("Sorry, koi images nahi mili. Please try another query.")
         return
 
-    # Send images
-    media_group = [InputMediaPhoto(url) for url in image_urls[:5]]
+    # Send fetched images to user
+    media_group = [InputMediaPhoto(url) for url in image_urls]
     update.message.reply_media_group(media=media_group)
-
-    # Inform user about additional images
-    if len(image_urls) > 5:
-        update.message.reply_text("Aur images ke liye `/search <query>` dobara use karein.")
 
 # Flask route for Telegram webhook
 @app.route('/webhook', methods=['POST'])
